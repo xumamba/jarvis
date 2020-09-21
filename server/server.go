@@ -89,7 +89,7 @@ func (s *Server) register(svcName string, fun interface{}) error {
 		return fmt.Errorf("unknown function type:%s", funType)
 	}
 	if funType.NumIn() != 3 || funType.NumOut() != 1 {
-		return fmt.Errorf("register function parameters must be:func Func(ctx context.Context, argv *Arg, replyv *Reply) error")
+		return fmt.Errorf("register function parameters must be:func Func(ctx context.Context, argv *Arg, reply *Reply) error")
 	}
 
 	reqType := funType.In(1)
@@ -165,6 +165,6 @@ func isAvailableType(t reflect.Type) bool {
 }
 
 func isExported(name string) bool {
-	r, _ := utf8.DecodeLastRuneInString(name)
+	r, _ := utf8.DecodeRuneInString(name)
 	return unicode.IsUpper(r)
 }
