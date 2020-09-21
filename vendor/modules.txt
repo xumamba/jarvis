@@ -1,3 +1,5 @@
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/facebookgo/stack v0.0.0-20160209184415-751773369052
 github.com/facebookgo/stack
 # github.com/json-iterator/go v1.1.10
@@ -6,3 +8,7 @@ github.com/json-iterator/go
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
 github.com/modern-go/reflect2
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/testify v1.3.0
+github.com/stretchr/testify/assert
