@@ -41,7 +41,7 @@ func Recovery() HandlerFunc {
 				}
 
 				c.Abort()
-				if err = c.encoder.Encode(c.err); err != nil{
+				if err = c.encoder.Encode(c.err); err != nil {
 					log.Println(err)
 				}
 			}
@@ -53,16 +53,16 @@ func Recovery() HandlerFunc {
 func HandleRequest() HandlerFunc {
 	return func(c *Context) {
 		c.req = New(c.svc.reqType)
-		if !c.svc.IsGRPC{
+		if !c.svc.IsGRPC {
 			c.resp = New(c.svc.respType)
 		}
-		if err := c.decoder.Decode(c.req); err != nil{
+		if err := c.decoder.Decode(c.req); err != nil {
 			panic(err)
 		}
 
 		c.Next()
 
-		if err := c.encoder.Encode(c.resp); err != nil{
+		if err := c.encoder.Encode(c.resp); err != nil {
 			log.Println(err)
 		}
 
@@ -72,12 +72,12 @@ func HandleRequest() HandlerFunc {
 func Call() HandlerFunc {
 	return func(c *Context) {
 		var err error
-		if c.svc.IsGRPC{
-			err  = c.svc.grpcCall(c)
-		}else {
+		if c.svc.IsGRPC {
+			err = c.svc.grpcCall(c)
+		} else {
 			err = c.svc.call(c, c.req, c.resp)
 		}
-		if err != nil{
+		if err != nil {
 			panic(fmt.Errorf("%s\n%s", c.svc.name, err))
 		}
 		c.Next()
@@ -91,9 +91,9 @@ func DefaultServer() *Server {
 func New(t reflect.Type) interface{} {
 	var req reflect.Value
 
-	if t.Kind() == reflect.Ptr{
+	if t.Kind() == reflect.Ptr {
 		req = reflect.New(t.Elem())
-	}else {
+	} else {
 		req = reflect.New(t)
 	}
 

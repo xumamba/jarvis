@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testStruct struct {}
+type testStruct struct{}
 
-func TestService(t *testing.T)  {
+func TestService(t *testing.T) {
 	ast := assert.New(t)
 	server := NewServer()
 
@@ -28,10 +28,10 @@ func TestService(t *testing.T)  {
 	err = server.RegisterService("testSvcName", func(ctx context.Context, req, resp testStruct) error { return nil })
 	ast.EqualError(err, "register function arg type must be ptr and export:server.testStruct")
 
-	err = server.RegisterService("testSvcName", func(ctx context.Context, req, resp *testStruct) error {return nil})
+	err = server.RegisterService("testSvcName", func(ctx context.Context, req, resp *testStruct) error { return nil })
 	ast.EqualError(err, "register function arg type must be ptr and export:*server.testStruct")
 
-	err = server.RegisterService("testSvcName", func(ctx context.Context, req, resp *string) testStruct {return testStruct{}})
+	err = server.RegisterService("testSvcName", func(ctx context.Context, req, resp *string) testStruct { return testStruct{} })
 	ast.EqualError(err, "register function return type must be error:server.testStruct")
 
 	err = server.RegisterService("testSvcName", func(ctx context.Context, req, resp *string) error {
@@ -42,7 +42,7 @@ func TestService(t *testing.T)  {
 
 	svc, ok := server.serviceMap.Load("testSvcName")
 	ast.True(ok)
-	var req , resp  string
+	var req, resp string
 	req = "jarvis"
 	err = svc.(*Service).call(context.Background(), &req, &resp)
 	ast.Equal(resp, "JARVIS")

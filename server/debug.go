@@ -11,10 +11,10 @@ func IsDebugMode() bool {
 	return debugMode
 }
 
-func EnableDebug()  {
+func EnableDebug() {
 	debugMode = true
 }
 
-func DisableDebug()  {
+func DisableDebug() {
 	debugMode = false
 }
