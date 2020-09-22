@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"time"
 
 	"github.com/facebookgo/stack"
@@ -57,7 +58,8 @@ func Handler(s *server.Server) http.Handler {
 				if err := recover(); err != nil {
 					s := stack.Caller(3)
 					if server.IsDebugMode() {
-						log.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s", timeFormat(time.Now()), ctx.Request.String(), err, s)
+						dumpRequest, _ := httputil.DumpRequest(request, true)
+						log.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s", timeFormat(time.Now()), string(dumpRequest), err, s)
 					} else {
 						log.Printf("[Recovery] %s panic recovered:\n%s\n%s", timeFormat(time.Now()), err, s)
 					}
