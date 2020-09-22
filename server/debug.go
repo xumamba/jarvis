@@ -5,7 +5,7 @@
 **/
 package server
 
-var debugMode = false
+var debugMode = true
 
 func IsDebugMode() bool {
 	return debugMode
