@@ -5,16 +5,16 @@
 **/
 package server
 
-var debugMode = false
+var debugMode = true
 
 func IsDebugMode() bool {
 	return debugMode
 }
 
-func EnableDebug()  {
+func EnableDebug() {
 	debugMode = true
 }
 
-func DisableDebug()  {
+func DisableDebug() {
 	debugMode = false
 }

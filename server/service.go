@@ -36,13 +36,13 @@ func (svc *Service) grpcCall(ctx context.Context) (err error) {
 
 	returnValues := svc.fun.Call([]reflect.Value{reflect.ValueOf(c), reflect.ValueOf(c.req)})
 	callErr := returnValues[1].Interface()
-	if callErr != nil{
+	if callErr != nil {
 		err = callErr.(error)
 		return
 	}
 
 	c.resp = returnValues[0].Interface()
-	if c.resp == nil{
+	if c.resp == nil {
 		err = fmt.Errorf("response is a nil value")
 	}
 	return

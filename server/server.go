@@ -126,18 +126,18 @@ func (s *Server) registerGRPC(svcValue reflect.Value, svcName string, fun interf
 	if funType.Kind() != reflect.Func {
 		return fmt.Errorf("unknown function type:%s", funType)
 	}
-	if funType.NumIn() != 2 || funType.NumOut() != 2{
+	if funType.NumIn() != 2 || funType.NumOut() != 2 {
 		return fmt.Errorf("register grpc function parameters must be:func Func(ctx context.Context, argv *Arg)(replyv *Reply, err error)")
 	}
 	reqType := funType.In(1)
-	if !isAvailableType(reqType){
+	if !isAvailableType(reqType) {
 		return fmt.Errorf("register function arg type must be ptr and export:%s", reqType)
 	}
 	respType := funType.Out(0)
-	if !isAvailableType(respType){
+	if !isAvailableType(respType) {
 		return fmt.Errorf("register function reply type must be ptr and export:%s", respType)
 	}
-	if errType := funType.Out(1); errType != reflect.TypeOf((*error)(nil)).Elem(){
+	if errType := funType.Out(1); errType != reflect.TypeOf((*error)(nil)).Elem() {
 		return fmt.Errorf("register function return type must be error")
 	}
 
@@ -150,7 +150,7 @@ func (s *Server) registerGRPC(svcValue reflect.Value, svcName string, fun interf
 		IsGRPC:   true,
 	}
 
-	if _, loaded := s.serviceMap.LoadOrStore(svcName, svc); loaded{
+	if _, loaded := s.serviceMap.LoadOrStore(svcName, svc); loaded {
 		return fmt.Errorf("service already registered:%s", svcName)
 	}
 	return nil
