@@ -16,6 +16,8 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
+# github.com/satori/go.uuid v1.2.0
+github.com/satori/go.uuid
 # github.com/stretchr/testify v1.3.0
 github.com/stretchr/testify/assert
 # github.com/valyala/bytebufferpool v1.0.0
