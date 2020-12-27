@@ -85,7 +85,7 @@ func Call() HandlerFunc {
 }
 
 func DefaultServer() *Server {
-	return NewServer().Use(Recovery(), JsonHandler(), HandleRequest(), Call())
+	return NewServer("defaultName").(*Server).Use(Recovery(), JsonHandler(), HandleRequest(), Call())
 }
 
 func New(t reflect.Type) interface{} {

@@ -1,35 +1,105 @@
+package server
+
 /**
 * @DateTime   : 2020/9/18 16:14
 * @Author     : xumamba
-* @Description:
+* @Description: 服务器实现
 **/
-package server
 
 import (
 	"fmt"
 	"io"
+	"net"
 	"reflect"
 	"sync"
+	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"jarvis/server/iface"
+	"jarvis/utils/log"
 )
 
+// Server 服务器
 type Server struct {
-	serviceMap sync.Map
-	Handlers   HandlersChain
+	ServerName string // 服务器名称
+	Network    string // tcp or tcp4 or tcp6
+	IP         string // 服务器绑定的IP地址
+	Port       int    // 服务器绑定的端口
+
+	serviceMap sync.Map      // 已注册的服务
+	Handlers   HandlersChain // 服务器中间件
 }
 
-func NewServer() *Server {
-	return &Server{
-		Handlers: make(HandlersChain, 0),
+// Start 服务器启动
+func (s *Server) Start() {
+	log.Logger.Info(fmt.Sprintf("Server Lintener at IP: %s, Port: %d is starting", s.IP, s.Port))
+
+	// 开启服务器监听
+	go func() {
+		tcpAddr, err := net.ResolveTCPAddr(s.Network, fmt.Sprintf("%s:%d", s.IP, s.Port))
+		if err != nil {
+			log.Logger.Error("resolve tcp address error: " + err.Error())
+			return
+		}
+		listener, err := net.ListenTCP(s.Network, tcpAddr)
+		if err != nil {
+			log.Logger.Error(fmt.Sprintf("listen: %s, error: %s", s.Network, err))
+			return
+		}
+		log.Logger.Info(fmt.Sprintf("start JARVIS server %s success, now listenning...", s.ServerName))
+
+		// todo 连接ID生成方法
+		var cid uint32
+		cid = 0
+
+		for {
+			// 阻塞等待客户端建立连接
+			conn, err := listener.AcceptTCP()
+			if err != nil {
+				log.Logger.Error("Accept error: " + err.Error())
+				continue
+			}
+			// 创建连接实体，处理连接绑定的业务方法
+			dealConn := NewConn(conn, cid, s.Handlers)
+			cid++
+			go dealConn.Start()
+		}
+	}()
+}
+
+func (s *Server) Stop() {
+	log.Logger.Info("stop server, name: " + s.ServerName)
+}
+
+func (s *Server) Serve() {
+	s.Start()
+
+	// 阻塞主Goroutine退出
+	for {
+		time.Sleep(10 * time.Second)
 	}
 }
 
+// NewServer 服务器初始化
+func NewServer(name string) iface.IServer {
+	return &Server{
+		ServerName: name,
+		Network:    "tcp4",
+		IP:         "0.0.0.0",
+		Port:       9999,
+		serviceMap: sync.Map{},
+		Handlers:   make(HandlersChain, 0),
+	}
+}
+
+// Use 为服务添加中间件
 func (s *Server) Use(middleware ...HandlerFunc) *Server {
 	s.Handlers = append(s.Handlers, middleware...)
 	return s
 }
 
+// GetContext 获取请求上下文
 func (s *Server) GetContext(svcName string, w io.Writer, r io.Reader) (*Context, error) {
 	svc, ok := s.serviceMap.Load(svcName)
 	if !ok {
@@ -44,6 +114,22 @@ func (s *Server) GetContext(svcName string, w io.Writer, r io.Reader) (*Context,
 	}, nil
 }
 
+// HandleContext 将服务器绑定的中间件，添加置请求上下文并调用。
+func (s *Server) HandleContext(c *Context) {
+	c.handlers = s.Handlers
+	c.Next()
+}
+
+// MustHandle 请求的入口处理函数
+func (s *Server) MustHandle(name string, w io.Writer, r io.Reader) {
+	ctx, err := s.GetContext(name, w, r)
+	if err != nil {
+		panic(err)
+	}
+	s.HandleContext(ctx)
+}
+
+// ForEachService 遍历服务器已注册的服务
 func (s *Server) ForEachService(fun func(name string, svc *Service)) {
 	s.serviceMap.Range(func(key, value interface{}) bool {
 		svcName := key.(string)
@@ -53,19 +139,7 @@ func (s *Server) ForEachService(fun func(name string, svc *Service)) {
 	})
 }
 
-func (s *Server) HandleContext(c *Context) {
-	c.handlers = s.Handlers
-	c.Next()
-}
-
-func (s *Server) MustHandle(name string, w io.Writer, r io.Reader) {
-	ctx, err := s.GetContext(name, w, r)
-	if err != nil {
-		panic(err)
-	}
-	s.HandleContext(ctx)
-}
-
+// RegisterService 向服务器中注册服务
 func (s *Server) RegisterService(svcName string, fun interface{}) error {
 	return s.register(svcName, fun)
 }
