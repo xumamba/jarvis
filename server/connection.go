@@ -8,13 +8,20 @@ package server
 
 import "C"
 import (
+	"errors"
+	"fmt"
+	"io"
 	"net"
+	"strconv"
+	"sync"
 
 	"jarvis/server/iface"
 	"jarvis/utils/log"
 )
 
 type Connection struct {
+	sync.RWMutex
+
 	// 当前连接的唯一标识
 	ConnID uint32
 	// 当前连接的socket TCP套接字
@@ -69,23 +76,58 @@ func (c *Connection) GetRemoteAddr() net.Addr {
 	return c.Conn.RemoteAddr()
 }
 
+func (c *Connection) SendMsg(msgID uint32, data []byte) error {
+	c.RLock()
+	defer c.RUnlock()
+	if c.isClosed == true{
+		return errors.New("Connection closed when send msg: connID= " + strconv.Itoa(int(c.GetConnID())))
+	}
+	msg := NewMessage(msgID, data)
+	packageMsg, err := DPHelper.PackageMsg(msg)
+	if err != nil{
+		log.Logger.Error("PackageMsg error: " + err.Error())
+		return err
+	}
+	fmt.Println(packageMsg)
+	if _, err := c.GetTCPConn().Write(packageMsg); err != nil{
+		log.Logger.Error("write message to client error: " + err.Error())
+		c.ExitChan <- true
+		return err
+	}
+	return nil
+}
+
 // StartReader 处理读取连接数据
 func (c *Connection) StartReader() {
 	log.Logger.Info("Reader Goroutine is running...")
 	defer c.Stop()
 
 	for {
-		buf := make([]byte, 512)
-
-		count, err := c.Conn.Read(buf)
-		if err != nil {
+		msgHead := make([]byte, DPHelper.GetHeadLen())
+		if _, err := io.ReadFull(c.GetTCPConn(), msgHead); err != nil {
 			log.Logger.Error("receive buf error: " + err.Error())
 			c.ExitChan <- true
 			continue
 		}
+		msg, err := DPHelper.UnPackageMsg(msgHead)
+		if err != nil {
+			log.Logger.Error("unpack error: " + err.Error())
+			c.ExitChan <- true
+			continue
+		}
+
+		data := make([]byte, msg.GetMsgLen())
+		if _, err := io.ReadFull(c.GetTCPConn(), data); err != nil {
+			log.Logger.Error("read msg data error: " + err.Error())
+			c.ExitChan <- true
+			continue
+		}
+
+		msg.SetRealData(data)
+
 		request := &Request{
 			conn: c,
-			data: buf,
+			msg:  msg,
 		}
 
 		go func(request iface.IRequest) {
@@ -93,12 +135,6 @@ func (c *Connection) StartReader() {
 			c.Router.Handle(request)
 			c.Router.PostHandle(request)
 		}(request)
-
-		if _, err := c.Conn.Write(buf[:count]); err != nil {
-			log.Logger.Error("write buf error: " + err.Error())
-			c.ExitChan <- true
-			return
-		}
 
 	}
 
@@ -112,6 +148,6 @@ func NewConn(conn *net.TCPConn, connID uint32, handlers HandlersChain, router if
 		isClosed: false,
 		ExitChan: make(chan bool, 1),
 		Handlers: handlers,
-		Router: router,
+		Router:   router,
 	}
 }

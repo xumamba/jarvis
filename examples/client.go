@@ -8,8 +8,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"time"
+
+	"jarvis/server"
 )
 
 func main() {
@@ -20,17 +23,32 @@ func main() {
 	}
 	var flag = 0
 	for {
-		if _, err := conn.Write([]byte("hello jarvis v0.3")); err != nil {
+		msg, _ := server.DPHelper.PackageMsg(server.NewMessage(0, []byte("hello jarvis v0.4")))
+		if _, err := conn.Write(msg); err != nil {
 			fmt.Println("[client] write error: ", err.Error())
 			return
 		}
 
-		bytes := make([]byte, 512)
-		if _, err = conn.Read(bytes); err != nil {
-			fmt.Println("[client] read error: ", err.Error())
-			return
+		msgHead := make([]byte, server.DPHelper.GetHeadLen())
+		if _, err := io.ReadFull(conn, msgHead); err != nil {
+			fmt.Println("receive buf error: " + err.Error())
+			break
 		}
-		fmt.Println("[client] receive server call back : ", string(bytes))
+		res, err := server.DPHelper.UnPackageMsg(msgHead)
+		if err != nil {
+			fmt.Println("unpack error: " + err.Error())
+
+			break
+		}
+		data := make([]byte, res.GetMsgLen())
+		if _, err := io.ReadFull(conn, data); err != nil {
+			fmt.Println("read msg body error")
+			break
+		}
+
+		res.SetRealData(data)
+
+		fmt.Printf("[client] receive server call back : %+v\n", res)
 
 		flag++
 		time.Sleep(1 * time.Second)

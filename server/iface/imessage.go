@@ -1,7 +1,8 @@
-package datapackage
+package iface
+
 /**
- * @DateTime   : 2020/12/24
- * @Author     : xumamba
+* @DateTime   : 2020/12/28
+* @Author     : xumamba
  * @Description: 直接面向TCP连接中的数据流。LTV(长度、类型、数据)结构，用于处理TCP粘包问题。
  **/
 

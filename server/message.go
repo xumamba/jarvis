@@ -1,15 +1,15 @@
-package datapackage
+package server
 
 /**
-* @DateTime   : 2020/12/24
+* @DateTime   : 2020/12/28
 * @Author     : xumamba
-* @Description:
+* @Description: 请求消息对象
 **/
 
 type Message struct {
-	Length uint32 // 消息长度
-	ID     uint32 // 消息唯一标识
-	Data   []byte // 消息内容
+	Length uint32
+	ID uint32
+	Data []byte
 }
 
 func (m *Message) GetMsgLen() uint32 {
@@ -36,3 +36,10 @@ func (m *Message) SetRealData(data []byte) {
 	m.Data = data
 }
 
+func NewMessage(msgID uint32, data []byte) *Message {
+	return &Message{
+		Length: uint32(len(data)),
+		ID:     msgID,
+		Data:   data,
+	}
+}

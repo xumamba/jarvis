@@ -12,14 +12,16 @@ import (
 
 // IConnection 连接接口
 type IConnection interface {
-	// 启动连接
+	// Start 启动连接
 	Start()
-	// 关闭连接
+	// Stop 关闭连接
 	Stop()
-	// 获取原生连接
+	// GetTCPConn 获取原生连接
 	GetTCPConn() *net.TCPConn
-	// 获取当前连接ID
+	// GetConnID 获取当前连接ID
 	GetConnID() uint32
-	// 获取当前连接对端地址
+	// GetRemoteAddr 获取当前连接对端地址
 	GetRemoteAddr() net.Addr
+	// SendMsg 向客户端发送数据
+	SendMsg(msgID uint32, data []byte) error
 }

@@ -25,7 +25,7 @@ type Config struct {
 var GlobalConfObj *Config
 
 func (c *Config) Reload() {
-	fileData, err := ioutil.ReadFile("../conf/jarvis.json")
+	fileData, err := ioutil.ReadFile("./conf/jarvis.json")
 	if err != nil {
 		panic(err)
 	}
@@ -44,5 +44,5 @@ func init() {
 		MaxPacketSize: 4096,
 		MaxConnNum:    12000,
 	}
-	GlobalConfObj.Reload()
+	// GlobalConfObj.Reload()
 }
