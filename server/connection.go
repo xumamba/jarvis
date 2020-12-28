@@ -25,6 +25,8 @@ type Connection struct {
 	ExitChan chan bool
 	// 连接处理函数
 	Handlers HandlersChain
+	// 连接处理路由函数
+	Router iface.IRouter
 }
 
 func (c *Connection) Start() {
@@ -81,6 +83,16 @@ func (c *Connection) StartReader() {
 			c.ExitChan <- true
 			continue
 		}
+		request := &Request{
+			conn: c,
+			data: buf,
+		}
+
+		go func(request iface.IRequest) {
+			c.Router.PreHandle(request)
+			c.Router.Handle(request)
+			c.Router.PostHandle(request)
+		}(request)
 
 		if _, err := c.Conn.Write(buf[:count]); err != nil {
 			log.Logger.Error("write buf error: " + err.Error())
@@ -93,12 +105,13 @@ func (c *Connection) StartReader() {
 }
 
 // NewConn 创建连接
-func NewConn(conn *net.TCPConn, connID uint32, handlers HandlersChain) iface.IConnection {
+func NewConn(conn *net.TCPConn, connID uint32, handlers HandlersChain, router iface.IRouter) iface.IConnection {
 	return &Connection{
 		ConnID:   connID,
 		Conn:     conn,
 		isClosed: false,
 		ExitChan: make(chan bool, 1),
 		Handlers: handlers,
+		Router: router,
 	}
 }

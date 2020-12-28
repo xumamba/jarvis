@@ -16,6 +16,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"jarvis/conf"
 	"jarvis/server/iface"
 	"jarvis/utils/log"
 )
@@ -29,6 +30,8 @@ type Server struct {
 
 	serviceMap sync.Map      // 已注册的服务
 	Handlers   HandlersChain // 服务器中间件
+
+	Router iface.IRouter // 服务路由方法
 }
 
 // Start 服务器启动
@@ -61,7 +64,7 @@ func (s *Server) Start() {
 				continue
 			}
 			// 创建连接实体，处理连接绑定的业务方法
-			dealConn := NewConn(conn, cid, s.Handlers)
+			dealConn := NewConn(conn, cid, s.Handlers, s.Router)
 			cid++
 			go dealConn.Start()
 		}
@@ -81,15 +84,21 @@ func (s *Server) Serve() {
 	}
 }
 
+// AddRouter 向服务器添加路由
+func (s *Server) AddRouter(router iface.IRouter) {
+	s.Router = router
+}
+
 // NewServer 服务器初始化
-func NewServer(name string) iface.IServer {
+func NewServer() iface.IServer {
 	return &Server{
-		ServerName: name,
+		ServerName: conf.GlobalConfObj.Name,
 		Network:    "tcp4",
-		IP:         "0.0.0.0",
-		Port:       9999,
+		IP:         conf.GlobalConfObj.IP,
+		Port:       conf.GlobalConfObj.Port,
 		serviceMap: sync.Map{},
 		Handlers:   make(HandlersChain, 0),
+		Router:     nil,
 	}
 }
 
