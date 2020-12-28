@@ -23,7 +23,7 @@ func main() {
 	}
 	var flag = 0
 	for {
-		msg, _ := server.DPHelper.PackageMsg(server.NewMessage(1, []byte("hello jarvis v0.5")))
+		msg, _ := server.DPHelper.PackageMsg(server.NewMessage(0, []byte("hello jarvis v0.6")))
 		if _, err := conn.Write(msg); err != nil {
 			fmt.Println("[client] write error: ", err.Error())
 			return
