@@ -9,7 +9,6 @@ package server
 import "C"
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -33,7 +32,7 @@ type Connection struct {
 	// 连接处理函数
 	Handlers HandlersChain
 	// 连接处理路由函数
-	Router iface.IRouter
+	MsgHandler iface.IMsgHandler
 }
 
 func (c *Connection) Start() {
@@ -79,17 +78,16 @@ func (c *Connection) GetRemoteAddr() net.Addr {
 func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 	c.RLock()
 	defer c.RUnlock()
-	if c.isClosed == true{
+	if c.isClosed == true {
 		return errors.New("Connection closed when send msg: connID= " + strconv.Itoa(int(c.GetConnID())))
 	}
 	msg := NewMessage(msgID, data)
 	packageMsg, err := DPHelper.PackageMsg(msg)
-	if err != nil{
+	if err != nil {
 		log.Logger.Error("PackageMsg error: " + err.Error())
 		return err
 	}
-	fmt.Println(packageMsg)
-	if _, err := c.GetTCPConn().Write(packageMsg); err != nil{
+	if _, err := c.GetTCPConn().Write(packageMsg); err != nil {
 		log.Logger.Error("write message to client error: " + err.Error())
 		c.ExitChan <- true
 		return err
@@ -130,24 +128,19 @@ func (c *Connection) StartReader() {
 			msg:  msg,
 		}
 
-		go func(request iface.IRequest) {
-			c.Router.PreHandle(request)
-			c.Router.Handle(request)
-			c.Router.PostHandle(request)
-		}(request)
-
+		go c.MsgHandler.Do(request)
 	}
 
 }
 
 // NewConn 创建连接
-func NewConn(conn *net.TCPConn, connID uint32, handlers HandlersChain, router iface.IRouter) iface.IConnection {
+func NewConn(conn *net.TCPConn, connID uint32, handlers HandlersChain, msgHandler iface.IMsgHandler) iface.IConnection {
 	return &Connection{
-		ConnID:   connID,
-		Conn:     conn,
-		isClosed: false,
-		ExitChan: make(chan bool, 1),
-		Handlers: handlers,
-		Router:   router,
+		ConnID:     connID,
+		Conn:       conn,
+		isClosed:   false,
+		ExitChan:   make(chan bool, 1),
+		Handlers:   handlers,
+		MsgHandler: msgHandler,
 	}
 }

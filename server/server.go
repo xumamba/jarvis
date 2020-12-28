@@ -31,7 +31,7 @@ type Server struct {
 	serviceMap sync.Map      // 已注册的服务
 	Handlers   HandlersChain // 服务器中间件
 
-	Router iface.IRouter // 服务路由方法
+	MsgHandler iface.IMsgHandler // 服务路由方法
 }
 
 // Start 服务器启动
@@ -64,7 +64,7 @@ func (s *Server) Start() {
 				continue
 			}
 			// 创建连接实体，处理连接绑定的业务方法
-			dealConn := NewConn(conn, cid, s.Handlers, s.Router)
+			dealConn := NewConn(conn, cid, s.Handlers, s.MsgHandler)
 			cid++
 			go dealConn.Start()
 		}
@@ -85,8 +85,8 @@ func (s *Server) Serve() {
 }
 
 // AddRouter 向服务器添加路由
-func (s *Server) AddRouter(router iface.IRouter) {
-	s.Router = router
+func (s *Server) AddRouter(msgID uint32, router iface.IRouter) {
+	s.MsgHandler.AddHandler(msgID, router)
 }
 
 // NewServer 服务器初始化
@@ -98,7 +98,7 @@ func NewServer() iface.IServer {
 		Port:       conf.GlobalConfObj.Port,
 		serviceMap: sync.Map{},
 		Handlers:   make(HandlersChain, 0),
-		Router:     nil,
+		MsgHandler: NewMsgHandler(),
 	}
 }
 

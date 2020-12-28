@@ -23,7 +23,7 @@ func main() {
 	}
 	var flag = 0
 	for {
-		msg, _ := server.DPHelper.PackageMsg(server.NewMessage(0, []byte("hello jarvis v0.4")))
+		msg, _ := server.DPHelper.PackageMsg(server.NewMessage(1, []byte("hello jarvis v0.5")))
 		if _, err := conn.Write(msg); err != nil {
 			fmt.Println("[client] write error: ", err.Error())
 			return
@@ -48,7 +48,8 @@ func main() {
 
 		res.SetRealData(data)
 
-		fmt.Printf("[client] receive server call back : %+v\n", res)
+		fmt.Printf("[client] receive server call back : msgID=%d, msgLen=%d, msgData=%s\n", res.GetMsgID(),
+			res.GetMsgLen(), res.GetRealData())
 
 		flag++
 		time.Sleep(1 * time.Second)
