@@ -8,5 +8,7 @@ package iface
 
 type IMsgHandler interface {
 	Do(request IRequest)
+	SendMsgToTaskQueue(request IRequest)
 	AddHandler(msgID uint32, router IRouter)
+	StartWorkerPool()
 }

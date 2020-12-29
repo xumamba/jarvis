@@ -40,6 +40,9 @@ func (s *Server) Start() {
 
 	// 开启服务器监听
 	go func() {
+		// 启动业务处理worker池
+		s.MsgHandler.StartWorkerPool()
+
 		tcpAddr, err := net.ResolveTCPAddr(s.Network, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			log.Logger.Error("resolve tcp address error: " + err.Error())

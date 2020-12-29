@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"sync"
 
+	"jarvis/conf"
 	"jarvis/server/iface"
 	"jarvis/utils/log"
 )
@@ -126,8 +127,13 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg,
 		}
-
-		go c.MsgHandler.Do(request)
+		if conf.GlobalConfObj.WorkerPoolSize > 0 {
+			// 启动worker工作池机制
+			c.MsgHandler.SendMsgToTaskQueue(request)
+		} else {
+			// 直接开协程处理请求
+			go c.MsgHandler.Do(request)
+		}
 	}
 
 }
