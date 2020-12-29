@@ -31,7 +31,8 @@ type Server struct {
 	serviceMap sync.Map      // 已注册的服务
 	Handlers   HandlersChain // 服务器中间件
 
-	MsgHandler iface.IMsgHandler // 服务路由方法
+	MsgHandler iface.IMsgHandler  // 服务路由方法
+	ConnMgr    iface.IConnManager // 连接管理
 }
 
 // Start 服务器启动
@@ -66,16 +67,24 @@ func (s *Server) Start() {
 				log.Logger.Error("Accept error: " + err.Error())
 				continue
 			}
+			// 判断最大连接数
+			if s.ConnMgr.Len() >= conf.GlobalConfObj.MaxConnNum{
+				conn.Close()
+				continue
+			}
 			// 创建连接实体，处理连接绑定的业务方法
-			dealConn := NewConn(conn, cid, s.Handlers, s.MsgHandler)
+			dealConn := NewConn(s, conn, cid, s.Handlers, s.MsgHandler)
 			cid++
 			go dealConn.Start()
 		}
 	}()
 }
 
+// Stop 关闭服务器
 func (s *Server) Stop() {
 	log.Logger.Info("stop server, name: " + s.ServerName)
+	// 关闭并清理当前建立的连接
+	s.ConnMgr.ClearAll()
 }
 
 func (s *Server) Serve() {
@@ -85,6 +94,11 @@ func (s *Server) Serve() {
 	for {
 		time.Sleep(10 * time.Second)
 	}
+}
+
+// GetConnMgr
+func (s *Server) GetConnMgr() iface.IConnManager {
+	return s.ConnMgr
 }
 
 // AddRouter 向服务器添加路由
@@ -102,6 +116,7 @@ func NewServer() iface.IServer {
 		serviceMap: sync.Map{},
 		Handlers:   make(HandlersChain, 0),
 		MsgHandler: NewMsgHandler(),
+		ConnMgr:    NewConnManager(),
 	}
 }
 

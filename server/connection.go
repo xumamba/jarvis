@@ -22,6 +22,8 @@ import (
 type Connection struct {
 	sync.RWMutex
 
+	Server iface.IServer
+
 	// 当前连接的唯一标识
 	ConnID uint32
 	// 当前连接的socket TCP套接字
@@ -34,8 +36,10 @@ type Connection struct {
 	Handlers HandlersChain
 	// 连接处理路由函数
 	MsgHandler iface.IMsgHandler
-	// 消息传递管道，用于读写分离
-	MsgChan chan []byte
+	// 无缓冲 消息传递管道，用于读写分离
+	msgChan chan []byte
+	// 有缓冲 消息传递管道，用于读写分离
+	msgBuffChan chan []byte
 }
 
 func (c *Connection) Start() {
@@ -63,8 +67,11 @@ func (c *Connection) Stop() {
 	c.Conn.Close()
 	// 通知缓冲队列读数据业务，该连接已关闭
 	c.ExitChan <- true
+	// 从连接管理器中移除连接
+	c.Server.GetConnMgr().Remove(c)
 	// 关闭连接信道
 	close(c.ExitChan)
+	close(c.msgChan)
 }
 
 func (c *Connection) GetTCPConn() *net.TCPConn {
@@ -91,7 +98,21 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 		log.Logger.Error("PackageMsg error: " + err.Error())
 		return err
 	}
-	c.MsgChan <- packageMsg
+	c.msgChan <- packageMsg
+	return nil
+}
+
+func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
+	if c.isClosed == true {
+		return errors.New("Connection closed when send msg: connID= " + strconv.Itoa(int(c.GetConnID())))
+	}
+	packageMsg, err := DPHelper.PackageMsg(NewMessage(msgID, data))
+	if err != nil {
+		log.Logger.Error("PackageMsg error: " + err.Error())
+		return err
+	}
+	// 回写消息给客户端
+	c.msgBuffChan <- packageMsg
 	return nil
 }
 
@@ -145,11 +166,21 @@ func (c *Connection) StartWriter() {
 
 	for {
 		select {
-		case data := <-c.MsgChan:
+		case data := <-c.msgChan:
 			// 有数据要写给客户端
 			if _, err := c.Conn.Write(data); err != nil {
 				log.Logger.Error("Send data error: " + err.Error())
 				return
+			}
+		case data, ok := <-c.msgBuffChan:
+			if ok {
+				if _, err := c.Conn.Write(data); err != nil {
+					log.Logger.Error("Send data error: " + err.Error())
+					return
+				}
+			} else {
+				log.Logger.Info("msgBuffChan is closed")
+				break
 			}
 		case <-c.ExitChan:
 			// conn 已关闭
@@ -159,14 +190,19 @@ func (c *Connection) StartWriter() {
 }
 
 // NewConn 创建连接
-func NewConn(conn *net.TCPConn, connID uint32, handlers HandlersChain, msgHandler iface.IMsgHandler) iface.IConnection {
-	return &Connection{
-		ConnID:     connID,
-		Conn:       conn,
-		isClosed:   false,
-		ExitChan:   make(chan bool, 1),
-		Handlers:   handlers,
-		MsgHandler: msgHandler,
-		MsgChan:    make(chan []byte),
+func NewConn(ser iface.IServer, conn *net.TCPConn, connID uint32, handlers HandlersChain, msgHandler iface.IMsgHandler) iface.IConnection {
+	c := &Connection{
+		Server:      ser,
+		ConnID:      connID,
+		Conn:        conn,
+		isClosed:    false,
+		ExitChan:    make(chan bool, 1),
+		Handlers:    handlers,
+		MsgHandler:  msgHandler,
+		msgChan:     make(chan []byte),
+		msgBuffChan: make(chan []byte, conf.GlobalConfObj.MaxMsgChanLen),
 	}
+	// 将新建连接交由连接管理模块
+	c.Server.GetConnMgr().Add(c)
+	return c
 }

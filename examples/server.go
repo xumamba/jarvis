@@ -28,7 +28,7 @@ func (pr *PingRouter) Handle(request iface.IRequest) {
 }
 
 func (pr *PingRouter) PostHandle(request iface.IRequest) {
-	if err := request.GetConn().SendMsg(1, []byte("[PingRouter] PostHandle...")); err != nil{
+	if err := request.GetConn().SendBuffMsg(1, []byte("[PingRouter] PostHandle...")); err != nil{
 		log.Println("post handle send msg to client failed: ", err)
 	}
 }

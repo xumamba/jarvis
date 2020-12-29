@@ -22,6 +22,8 @@ type IConnection interface {
 	GetConnID() uint32
 	// GetRemoteAddr 获取当前连接对端地址
 	GetRemoteAddr() net.Addr
-	// SendMsg 向客户端发送数据
+	// SendMsg 向客户端发送数据(无缓冲)
 	SendMsg(msgID uint32, data []byte) error
+	// SendBuffMsg 向客户端发送数据（有缓冲）
+	SendBuffMsg(msgID uint32, data []byte) error
 }

@@ -22,6 +22,7 @@ type Config struct {
 	MaxConnNum      int    // 最大连接数
 	WorkerPoolSize  uint32 // 业务处理工作池的worker数量
 	MaxTaskQueueLen uint32 // 与worker绑定的任务队列最大任务存储数量
+	MaxMsgChanLen   uint32 // 读写分离管道最大缓冲数量
 }
 
 var GlobalConfObj *Config
@@ -47,6 +48,7 @@ func init() {
 		MaxConnNum:      12000,
 		WorkerPoolSize:  10,
 		MaxTaskQueueLen: 1024,
+		MaxMsgChanLen:   1024,
 	}
 	// GlobalConfObj.Reload()
 }
