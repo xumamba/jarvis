@@ -15,4 +15,8 @@ type IServer interface {
 	Stop()
 	// 开启业务服务方法
 	Serve()
+	// 添加业务处理路由
+	AddRouter(msgID uint32, router IRouter)
+	// 获取连接管理模块
+	GetConnMgr() IConnManager
 }

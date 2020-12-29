@@ -12,10 +12,10 @@ import (
 	"net"
 	"reflect"
 	"sync"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
+	"jarvis/conf"
 	"jarvis/server/iface"
 	"jarvis/utils/log"
 )
@@ -29,6 +29,9 @@ type Server struct {
 
 	serviceMap sync.Map      // 已注册的服务
 	Handlers   HandlersChain // 服务器中间件
+
+	MsgHandler iface.IMsgHandler  // 服务路由方法
+	ConnMgr    iface.IConnManager // 连接管理
 }
 
 // Start 服务器启动
@@ -37,6 +40,9 @@ func (s *Server) Start() {
 
 	// 开启服务器监听
 	go func() {
+		// 启动业务处理worker池
+		s.MsgHandler.StartWorkerPool()
+
 		tcpAddr, err := net.ResolveTCPAddr(s.Network, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
 			log.Logger.Error("resolve tcp address error: " + err.Error())
@@ -60,36 +66,55 @@ func (s *Server) Start() {
 				log.Logger.Error("Accept error: " + err.Error())
 				continue
 			}
+			// 判断最大连接数
+			if s.ConnMgr.Len() >= conf.GlobalConfObj.MaxConnNum {
+				conn.Close()
+				continue
+			}
 			// 创建连接实体，处理连接绑定的业务方法
-			dealConn := NewConn(conn, cid, s.Handlers)
+			dealConn := NewConn(s, conn, cid, s.Handlers, s.MsgHandler)
 			cid++
 			go dealConn.Start()
 		}
 	}()
 }
 
+// Stop 关闭服务器
 func (s *Server) Stop() {
 	log.Logger.Info("stop server, name: " + s.ServerName)
+	// 关闭并清理当前建立的连接
+	s.ConnMgr.ClearAll()
 }
 
+// Serve 运行服务
 func (s *Server) Serve() {
 	s.Start()
 
 	// 阻塞主Goroutine退出
-	for {
-		time.Sleep(10 * time.Second)
-	}
+	select {}
+}
+
+// GetConnMgr
+func (s *Server) GetConnMgr() iface.IConnManager {
+	return s.ConnMgr
+}
+
+// AddRouter 向服务器添加路由
+func (s *Server) AddRouter(msgID uint32, router iface.IRouter) {
+	s.MsgHandler.AddHandler(msgID, router)
 }
 
 // NewServer 服务器初始化
-func NewServer(name string) iface.IServer {
+func NewServer() iface.IServer {
 	return &Server{
-		ServerName: name,
+		ServerName: conf.GlobalConfObj.Name,
 		Network:    "tcp4",
-		IP:         "0.0.0.0",
-		Port:       9999,
+		IP:         conf.GlobalConfObj.IP,
+		Port:       conf.GlobalConfObj.Port,
 		serviceMap: sync.Map{},
 		Handlers:   make(HandlersChain, 0),
+		MsgHandler: NewMsgHandler(),
+		ConnMgr:    NewConnManager(),
 	}
 }
 

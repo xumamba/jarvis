@@ -38,14 +38,14 @@ func ClientTest() {
 
 		flag++
 		time.Sleep(1 * time.Second)
-		if flag == 20{
+		if flag == 20 {
 			// conn.Close()
 		}
 	}
 }
 
 func TestJarvis(t *testing.T) {
-	ser := server.NewServer("jarvis")
+	ser := server.NewServer()
 
 	go ClientTest()
 

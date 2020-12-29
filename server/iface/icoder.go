@@ -3,7 +3,7 @@
 * @Author     : xumamba
 * @Description:
 **/
-package server
+package iface
 
 type Encoder interface {
 	Encode(val interface{}) error
