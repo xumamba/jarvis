@@ -12,7 +12,6 @@ import (
 	"net"
 	"reflect"
 	"sync"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -68,7 +67,7 @@ func (s *Server) Start() {
 				continue
 			}
 			// 判断最大连接数
-			if s.ConnMgr.Len() >= conf.GlobalConfObj.MaxConnNum{
+			if s.ConnMgr.Len() >= conf.GlobalConfObj.MaxConnNum {
 				conn.Close()
 				continue
 			}
@@ -87,13 +86,12 @@ func (s *Server) Stop() {
 	s.ConnMgr.ClearAll()
 }
 
+// Serve 运行服务
 func (s *Server) Serve() {
 	s.Start()
 
 	// 阻塞主Goroutine退出
-	for {
-		time.Sleep(10 * time.Second)
-	}
+	select {}
 }
 
 // GetConnMgr

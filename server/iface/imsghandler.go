@@ -7,8 +7,12 @@ package iface
  */
 
 type IMsgHandler interface {
+	// 非阻塞方式处理请求
 	Do(request IRequest)
-	SendMsgToTaskQueue(request IRequest)
+	// 添加消息处理路由
 	AddHandler(msgID uint32, router IRouter)
+	// 发送消息至任务队列
+	SendMsgToTaskQueue(request IRequest)
+	// 启动worker池
 	StartWorkerPool()
 }

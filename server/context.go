@@ -9,6 +9,8 @@ import (
 	"io"
 	"math"
 	"time"
+
+	"jarvis/server/iface"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -17,8 +19,8 @@ type Context struct {
 	index    int8
 	handlers HandlersChain
 
-	encoder Encoder
-	decoder Decoder
+	encoder iface.Encoder
+	decoder iface.Decoder
 
 	w io.Writer
 	r io.Reader

@@ -21,9 +21,8 @@ import (
 
 type Connection struct {
 	sync.RWMutex
-
+	// 绑定该连接所属服务对象
 	Server iface.IServer
-
 	// 当前连接的唯一标识
 	ConnID uint32
 	// 当前连接的socket TCP套接字
@@ -56,12 +55,14 @@ func (c *Connection) Start() {
 
 func (c *Connection) Stop() {
 	log.Logger.Info(c.GetRemoteAddr().String() + " connection exit.")
+
+	c.Lock()
+	defer c.Unlock()
+
 	if c.isClosed == true {
 		return
 	}
 	c.isClosed = true
-
-	// todo 执行用户注册的关闭连接后的回调业务方法
 
 	// 关闭socket连接
 	c.Conn.Close()
@@ -103,6 +104,8 @@ func (c *Connection) SendMsg(msgID uint32, data []byte) error {
 }
 
 func (c *Connection) SendBuffMsg(msgID uint32, data []byte) error {
+	c.RLock()
+	defer c.RUnlock()
 	if c.isClosed == true {
 		return errors.New("Connection closed when send msg: connID= " + strconv.Itoa(int(c.GetConnID())))
 	}
